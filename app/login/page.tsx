@@ -108,7 +108,7 @@ export default function LoginPage() {
                 >
                   <MenuItem value="aarushgupta2018@gmail.com">CEO</MenuItem>
                   <MenuItem value="aarushgupta.bt23mech@pec.edu.in">Manager</MenuItem>
-                  <MenuItem value="aarushgupta2018@gmail.com">HR</MenuItem>
+                  <MenuItem value="test@123.com">HR</MenuItem>
                 </Select>
               </FormControl> 
               }
