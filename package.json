@@ -12,6 +12,7 @@
     "@emotion/react": "latest",
     "@emotion/styled": "latest",
     "@hookform/resolvers": "^3.9.1",
+    "@mui/icons-material": "^7.1.1",
     "@mui/material": "latest",
     "@mui/material-pigment-css": "latest",
     "@radix-ui/react-accordion": "1.2.2",

@@ -38,7 +38,9 @@ export default function HRNotesView() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [selectedEmployeeId, setSelectedEmployeeId] = useState("")
   const [selectedYear, setSelectedYear] = useState("")
+  const [selectedTag, setSelectedTag] = useState("")
   const [years, setYears] = useState<string[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
@@ -78,13 +80,21 @@ export default function HRNotesView() {
   }, [])
 
   useEffect(() => {
+    const query = searchQuery.trim().toLowerCase()
+
     const result = notes.filter(note => {
       const matchEmployee = selectedEmployeeId ? note.employee_id === Number(selectedEmployeeId) : true
       const matchYear = selectedYear ? new Date(note.timestamp).getFullYear().toString() === selectedYear : true
-      return matchEmployee && matchYear
+      const matchTag = selectedTag ? note.note_type === selectedTag : true
+      const matchSearch = query
+        ? note.note.toLowerCase().includes(query) || note.employee_id.toString().includes(query)
+        : true
+
+      return matchEmployee && matchYear && matchTag && matchSearch
     })
+
     setFilteredNotes(result)
-  }, [selectedEmployeeId, selectedYear, notes])
+  }, [selectedEmployeeId, selectedYear, searchQuery, selectedTag, notes])
 
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
@@ -100,6 +110,27 @@ export default function HRNotesView() {
       ) : (
         <>
           <Stack spacing={3} sx={{ mb: 4 }}>
+            {/* Search */}
+            <FormControl fullWidth>
+              <InputLabel shrink htmlFor="search">
+                Search Notes
+              </InputLabel>
+              <input
+                id="search"
+                type="text"
+                placeholder="Search by employee ID or note content"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  padding: '12px',
+                  borderRadius: '4px',
+                  border: '1px solid #ccc',
+                  marginTop: '8px'
+                }}
+              />
+            </FormControl>
+
+            {/* Employee Filter */}
             <FormControl fullWidth>
               <InputLabel shrink>Employee</InputLabel>
               <Select
@@ -120,6 +151,7 @@ export default function HRNotesView() {
               </Select>
             </FormControl>
 
+            {/* Year Filter */}
             <FormControl fullWidth>
               <InputLabel shrink>Year</InputLabel>
               <Select
@@ -135,8 +167,24 @@ export default function HRNotesView() {
                 ))}
               </Select>
             </FormControl>
+
+            {/* Tag Filter */}
+            <FormControl fullWidth>
+              <InputLabel shrink>Note Type</InputLabel>
+              <Select
+                value={selectedTag}
+                label="Note Type"
+                onChange={(e) => setSelectedTag(e.target.value)}
+              >
+                <MenuItem value="">All Types</MenuItem>
+                <MenuItem value="positive">Positive</MenuItem>
+                <MenuItem value="negative">Negative</MenuItem>
+                <MenuItem value="neutral">Neutral</MenuItem>
+              </Select>
+            </FormControl>
           </Stack>
 
+          {/* Notes Display */}
           {filteredNotes.length === 0 ? (
             <Typography>No public notes found.</Typography>
           ) : (

@@ -24,6 +24,8 @@ export default function CEOAddNoteView() {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | "">("")
   const [noteType, setNoteType] = useState<"positive" | "negative" | "neutral">("negative")
   const [performanceNote, setPerformanceNote] = useState("")
+  const [isPrivate, setIsPrivate] = useState(false)
+
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -50,6 +52,7 @@ export default function CEOAddNoteView() {
     fetchEmployees()
   }, [])
 
+  
   const handleAddNote = async () => {
     if (!selectedEmployeeId) {
       alert("Please select an employee.")
@@ -70,6 +73,7 @@ export default function CEOAddNoteView() {
           employeeId: selectedEmployeeId,
           noteType, // already lowercase, type-safe
           performanceNote,
+          is_private : isPrivate
         }),
       })
 
@@ -130,6 +134,17 @@ export default function CEOAddNoteView() {
               <MenuItem value="neutral">Neutral</MenuItem>
             </Select>
           </FormControl>
+
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="private"
+              checked={isPrivate}
+              onChange={() => setIsPrivate(!isPrivate)}
+            />
+            <label htmlFor="private" className="text-sm">Mark as Private (CEO only)</label>
+          </div>
+
 
           <Button
             variant="contained"
