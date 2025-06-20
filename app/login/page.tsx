@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useAuth } from "../context/auth-context"
@@ -20,12 +20,27 @@ import {
   MenuItem,
 } from "@mui/material"
 
+interface QuickUser {
+  email: string
+  role: string
+}
+
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+  const [quickUsers, setQuickUsers] = useState<QuickUser[]>([])
   const { login } = useAuth()
   const router = useRouter()
+
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/quick-login-users`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setQuickUsers(data)
+      })
+      .catch((err) => console.error("Failed to fetch quick login users:", err))
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,7 +49,12 @@ export default function LoginPage() {
     try {
       const success = await login(email, password)
       if (success) {
-        router.push("/dashboard")
+        const storedUser = JSON.parse(localStorage.getItem("user") || "{}")
+        if (storedUser.role === "admin") {
+          router.push("/admin/users")
+        } else {
+          router.push("/dashboard")
+        }
       } else {
         setError("Invalid email or password")
       }
@@ -95,23 +115,23 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
 
-              {/* ✅ Future Quick Login Dropdown - Leave As-Is */}
-              {
+              {/* ✅ Dynamic Quick Login Dropdown */}
               <FormControl fullWidth margin="normal">
-                <InputLabel id="demo-login-select-label">Quick Login As</InputLabel>
+                <InputLabel id="quick-login-label">Quick Login As</InputLabel>
                 <Select
-                  labelId="demo-login-select-label"
-                  id="demo-login-select"
+                  labelId="quick-login-label"
+                  id="quick-login-select"
                   value={email}
                   label="Quick Login As"
                   onChange={(e) => setEmail(e.target.value)}
                 >
-                  <MenuItem value="aarushgupta2018@gmail.com">CEO</MenuItem>
-                  <MenuItem value="aarushgupta.bt23mech@pec.edu.in">Manager</MenuItem>
-                  <MenuItem value="test@123.com">HR</MenuItem>
+                  {quickUsers.map((user) => (
+                    <MenuItem key={user.email} value={user.email}>
+                      {user.role} – {user.email}
+                    </MenuItem>
+                  ))}
                 </Select>
-              </FormControl> 
-              }
+              </FormControl>
 
               <Button type="submit" fullWidth variant="contained" sx={{ mt: 3 }}>
                 Sign In

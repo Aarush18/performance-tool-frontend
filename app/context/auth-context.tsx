@@ -1,11 +1,17 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { useRouter } from "next/navigation" // ✅ import router
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode
+} from "react"
+import { useRouter } from "next/navigation"
 import type { User, AuthState, UserRole } from "../types/auth"
 
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<boolean>
+  login: (email: string, password: string) => Promise<"success" | "forceReset" | "error">
   logout: () => void
   hasPermission: (requiredRoles: UserRole[]) => boolean
 }
@@ -20,7 +26,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>(initialState)
-  const router = useRouter() // ✅ initialize router
+  const router = useRouter()
 
   useEffect(() => {
     const savedUser = localStorage.getItem("user")
@@ -45,36 +51,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<"success" | "forceReset" | "error"> => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       })
 
-      if (!res.ok) {
-        throw new Error(`HTTP error! Status: ${res.status}`)
+      const data = await res.json()
+
+      if (!res.ok) return "error"
+
+      // ✅ Handle force password reset
+      if (data.forceReset) {
+        localStorage.setItem("token", data.token)
+        router.push("/reset-password")
+        return "forceReset"
       }
 
-      const data = await res.json()
-      const { user, token } = data
-
-      localStorage.setItem("user", JSON.stringify(user))
-      localStorage.setItem("token", token)
+      // ✅ Normal login
+      localStorage.setItem("user", JSON.stringify(data.user))
+      localStorage.setItem("token", data.token)
 
       setAuthState({
         isAuthenticated: true,
-        user,
+        user: data.user,
         loading: false,
       })
 
-      return true
-    } catch (error) {
-      console.error("Login failed:", error)
-      return false
+      return "success"
+    } catch (err) {
+      console.error("Login error:", err)
+      return "error"
     }
   }
 
@@ -86,13 +95,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: null,
       loading: false,
     })
-    router.push("/login") // ✅ redirect to login
+    router.push("/login")
   }
 
   const hasPermission = (requiredRoles: UserRole[]): boolean => {
-    if (!authState.isAuthenticated || !authState.user) {
-      return false
-    }
+    if (!authState.isAuthenticated || !authState.user) return false
     return requiredRoles.includes(authState.user.role)
   }
 
