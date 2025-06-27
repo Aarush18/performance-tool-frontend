@@ -92,3 +92,12 @@ body {
     @apply bg-background text-foreground;
   }
 }
+/* globals.css */
+body {
+  background: linear-gradient(135deg, #0f172a, #020617);
+  color: #e0f2fe;
+  font-family: 'Orbitron', sans-serif;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-size: cover;
+}

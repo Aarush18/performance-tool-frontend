@@ -2,21 +2,12 @@
 
 import { useEffect, useState } from "react"
 import {
-  Card,
-  CardContent,
-  Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Box,
-  Chip,
-  Stack,
-  Button,
-  Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Button as MuiButton
+  Card, CardContent, Typography, FormControl, InputLabel,
+  Select, MenuItem, Box, Chip, Stack, TextField, Button
 } from "@mui/material"
 import { useRouter } from "next/navigation"
+import jsPDF from "jspdf"
+import autoTable from "jspdf-autotable"
 
 interface Note {
   id: number
@@ -25,6 +16,7 @@ interface Note {
   note: string
   note_type: "positive" | "negative" | "neutral"
   timestamp: string
+  is_private: boolean
 }
 
 interface Employee {
@@ -32,38 +24,51 @@ interface Employee {
   name: string
 }
 
+interface Tag {
+  tag: string
+  created_by_role: string
+}
+
 export default function ManagerNotesView() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | "">("")
-  const [years, setYears] = useState<string[]>([])
   const [selectedYear, setSelectedYear] = useState("")
+  const [years, setYears] = useState<string[]>([])
   const [notes, setNotes] = useState<Note[]>([])
-  const [editOpen, setEditOpen] = useState(false)
-  const [noteToEdit, setNoteToEdit] = useState<Note | null>(null)
+  const [privacyFilter, setPrivacyFilter] = useState<"all" | "private" | "public">("all")
   const [searchText, setSearchText] = useState("")
+  const [userRole, setUserRole] = useState("")
+  const [tags, setTags] = useState<Tag[]>([])
+  const [editingNoteId, setEditingNoteId] = useState<number | null>(null)
+  const [editText, setEditText] = useState("")
+
+
+
   const router = useRouter()
-
-
-
-
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
 
   useEffect(() => {
-    const fetchEmployees = async () => {
-      if (!token) return
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/employees`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        const data = await res.json()
-        setEmployees(data)
-      } catch (err) {
-        console.error("Error fetching employees:", err)
-      }
+    const token = localStorage.getItem("token")
+    if (token) {
+      const payload = JSON.parse(atob(token.split(".")[1]))
+      setUserRole(payload.role)
     }
-
-    fetchEmployees()
-  }, [token])
+  }, [])
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      if (!token) return;
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/my-employees`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        setEmployees(data);
+      } catch (err) {
+        console.error("Error fetching employees:", err);
+      }
+    };
+    fetchEmployees();
+  }, [token]);
 
   useEffect(() => {
     const fetchYears = async () => {
@@ -74,272 +79,324 @@ export default function ManagerNotesView() {
         })
         const data = await res.json()
         if (Array.isArray(data)) {
-          const yearStrings = data.map((y: any) => y.toString())
-          setYears(yearStrings)
+          setYears(data.map((year: any) => year.toString()))
         }
       } catch (err) {
         console.error("Error fetching years:", err)
-        setYears([])
       }
     }
-
     fetchYears()
   }, [token])
 
   useEffect(() => {
-    const fetchNotes = async () => {
-      if (!token) return
+    const fetchTags = async () => {
+      if (!selectedEmployeeId || !token) return
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/manager/notes`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tags/${selectedEmployeeId}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
-
-        if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`)
-
+        if (!res.ok) throw new Error("Failed to fetch tags")
         const data = await res.json()
-        const filteredNotes = data.filter((note: Note) => {
-          const matchById = selectedEmployeeId ? note.employee_id === Number(selectedEmployeeId) : true
-          const matchByYear = selectedYear
-            ? new Date(note.timestamp).getFullYear().toString() === selectedYear
-            : true
-          const matchByText = searchText
-            ? `${note.employee_name} ${note.note} ${note.employee_id}`
-              .toLowerCase()
-              .includes(searchText.toLowerCase())
-            : true
-
-          return matchById && matchByYear && matchByText
-        })
-
-        setNotes(filteredNotes)
+        setTags(data)
       } catch (err) {
-        console.error("Error fetching notes:", err)
-        setNotes([])
+        console.error("Error fetching tags:", err)
       }
     }
+    fetchTags()
+  }, [selectedEmployeeId, token])
 
-    fetchNotes()
-  }, [selectedEmployeeId, selectedYear, searchText, token]) // 🛠️ Include searchText here
-
-  const handleEdit = (note: Note) => {
-    setNoteToEdit(note)
-    setEditOpen(true)
-  }
-
-  const handleDelete = async (noteId: number) => {
-    const token = localStorage.getItem("token")
+  const fetchNotes = async () => {
     if (!token) return
-
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/manager/notes/${noteId}`, {
-        method: "DELETE",
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/getNotes`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-
-      if (res.ok) {
-        alert("Note deleted")
-        setNotes((prev) => prev.filter((n) => n.id !== noteId))
-      } else {
-        alert("Failed to delete")
-      }
+      if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`)
+      const data = await res.json()
+      const filteredNotes = data.filter((note: Note) => {
+        const matchById = selectedEmployeeId !== "" ? note.employee_id === Number(selectedEmployeeId) : true
+        const matchByYear = selectedYear ? new Date(note.timestamp).getFullYear().toString() === selectedYear : true
+        const matchByPrivacy =
+          privacyFilter === "private" ? note.is_private === true :
+            privacyFilter === "public" ? note.is_private === false : true
+        const matchByText = searchText
+          ? `${note.employee_name} ${note.note} ${note.employee_id}`.toLowerCase().includes(searchText.toLowerCase())
+          : true
+        return matchById && matchByYear && matchByPrivacy && matchByText
+      })
+      setNotes(filteredNotes)
     } catch (err) {
-      console.error("Error deleting:", err)
+      console.error("Error fetching notes:", err)
+      setNotes([])
     }
   }
 
-  const handleUpdate = async () => {
-    if (!noteToEdit || !token) return;
+  useEffect(() => {
+    fetchNotes()
+  }, [selectedEmployeeId, selectedYear, privacyFilter, searchText, token])
 
+  const exportToPDF = () => {
+    const doc = new jsPDF()
+    const filteredNotes = selectedEmployeeId
+      ? notes.filter((n) => n.employee_id === Number(selectedEmployeeId))
+      : notes
+    const tableData = filteredNotes.map((note) => [
+      note.employee_name,
+      note.employee_id,
+      note.note_type,
+      note.note,
+      new Date(note.timestamp).toLocaleString(),
+      note.is_private ? "Private" : "Public"
+    ])
+    autoTable(doc, {
+      head: [["Employee Name", "Employee ID", "Type", "Note", "Timestamp", "Visibility"]],
+      body: tableData,
+    })
+    const selectedEmployee = employees.find(e => e.id === Number(selectedEmployeeId))
+    const filename = selectedEmployeeId && selectedEmployee ? `${selectedEmployee.name}_notes.pdf` : "manager_notes.pdf"
+    doc.save(filename)
+  }
+
+  const handleEdit = (id: number, currentText: string) => {
+    setEditingNoteId(id)
+    setEditText(currentText)
+  }
+
+  const handleSaveEdit = async (id: number) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/manager/notes/${noteToEdit.id}`, {
+      const originalNote = notes.find(n => n.id === id)
+      if (!originalNote) throw new Error("Note not found")
+  
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/manager/notes/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          note: noteToEdit.note,
-          note_type: noteToEdit.note_type,
+          note: editText,
+          note_type: originalNote.note_type,
+          is_private: originalNote.is_private
         }),
-      });
-
-      if (!res.ok) throw new Error("Failed to update note");
-
-      alert("Note updated successfully");
-      setEditOpen(false);
-
-      // Refresh notes
-      setNotes((prev) =>
-        prev.map((n) => (n.id === noteToEdit.id ? { ...n, ...noteToEdit } : n))
-      );
+      })
+  
+      if (res.ok) {
+        setEditingNoteId(null)
+        setEditText("")
+        fetchNotes()
+      } else {
+        throw new Error("Edit failed")
+      }
     } catch (err) {
-      console.error("Error updating note:", err);
-      alert("Update failed");
+      console.error("Error editing note:", err)
     }
-  };
+  }
+  
+
+  const handleDelete = async (id: number) => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/manager/notes/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        fetchNotes(); // refresh notes
+      } else {
+        throw new Error("Delete failed");
+      }
+    } catch (err) {
+      console.error("Error deleting note:", err);
+    }
+  }
 
 
   return (
-    <Card sx={{ maxWidth: 700, mx: "auto", mt: 4 }}>
-      <CardContent>
-        <Typography variant="h5" gutterBottom color="text.secondary">
-          Manager Notes View
-        </Typography>
+    <Card sx={{
+      maxWidth: "100%",
+      mx: "auto",
+      mt: 4,
+      borderRadius: 4,
+      background: "linear-gradient(135deg, rgba(0,0,0,0.6), rgba(10,10,25,0.7))",
+      backdropFilter: "blur(15px)",
+      border: "1px solid rgba(0,255,255,0.15)",
+      boxShadow: "0 0 30px rgba(0,255,255,0.15)",
+      color: "#fff",
+      fontFamily: "'Orbitron', sans-serif",
+      p: 4,
+    }}>
+      <Typography variant="h4" fontWeight="bold" sx={{ mb: 3, color: "#00ffff", textShadow: "0 0 10px #00ffff", fontFamily: "'Orbitron', sans-serif" }}>
+        ⚙️ Manager Team Notes View
+      </Typography>
 
+      <Stack spacing={3}>
         <TextField
           label="Search Notes"
-          placeholder="Search by keyword, employee name, or ID"
           fullWidth
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
-          sx={{ my: 2 }}
+          sx={{
+            input: { color: "#00ffff", fontFamily: "'Orbitron', sans-serif" },
+            label: { color: "#00ffff" },
+            "& .MuiOutlinedInput-root": {
+              "& fieldset": { borderColor: "#00ffff" },
+              "&:hover fieldset": { borderColor: "#00ffff" },
+              "&.Mui-focused fieldset": { borderColor: "#00ffff" },
+            },
+          }}
         />
 
+        <FormControl fullWidth>
+          <InputLabel sx={{ color: "#00ffff" }}>Employee</InputLabel>
+          <Select
+            value={selectedEmployeeId}
+            onChange={(e) => setSelectedEmployeeId(e.target.value)}
+            sx={{ color: "#00ffff", fontFamily: "'Orbitron', sans-serif" }}
+          >
+            <MenuItem value="">All Employees</MenuItem>
+            {employees.map((emp) => (
+              <MenuItem key={emp.id} value={emp.id}>{`${emp.id} - ${emp.name}`}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
-        <Stack spacing={3}>
-          {/* Employee ID filter */}
-          <FormControl fullWidth>
-            <InputLabel shrink>Search by Employee</InputLabel>
-            <Select
-              value={selectedEmployeeId}
-              label="Search by Employee"
-              onChange={(e) => setSelectedEmployeeId(Number(e.target.value))}
-              displayEmpty
-              renderValue={(selected) =>
-                selected === "" ? "All Employees" : `ID: ${selected}`
-              }
+        <FormControl fullWidth>
+          <InputLabel sx={{ color: "#00ffff" }}>Year</InputLabel>
+          <Select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value)}
+            sx={{ color: "#00ffff" }}
+          >
+            <MenuItem value="">All Years</MenuItem>
+            {years.map((y) => (
+              <MenuItem key={y} value={y}>{y}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+
+        <Button
+          variant="outlined"
+          onClick={() => selectedEmployeeId && router.push(`/ceo/custom-tags/${selectedEmployeeId}`)}
+          sx={{ color: "#00ffff", borderColor: "#00ffff", fontWeight: 600, alignSelf: "flex-start" }}
+        >
+          View All Tags for Employee
+        </Button>
+
+        <Button
+          variant="contained"
+          onClick={exportToPDF}
+          sx={{ backgroundColor: "#00ffff", color: "#000", fontWeight: 600, alignSelf: "flex-start" }}
+        >
+          Export Notes as PDF
+        </Button>
+      </Stack>
+
+      <Box sx={{ mt: 4 }}>
+        {notes.length === 0 ? (
+          <Typography variant="body2" color="rgba(255,255,255,0.6)">
+            No notes found for the selected filters.
+          </Typography>
+        ) : (
+          notes.map((note) => (
+            <Box
+              key={note.id}
+              sx={{
+                mb: 3,
+                p: 3,
+                borderRadius: "20px",
+                border: "1px solid rgba(0,255,255,0.2)",
+                background: "rgba(0, 0, 0, 0.3)",
+                backdropFilter: "blur(12px)",
+                boxShadow: "0 0 20px rgba(0, 255, 255, 0.2)",
+                transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                "&:hover": {
+                  transform: "scale(1.02)",
+                  boxShadow: "0 0 30px rgba(0, 255, 255, 0.4)",
+                },
+              }}
             >
-              <MenuItem value="">All Employees</MenuItem>
-              {employees.map((emp) => (
-                <MenuItem key={emp.id} value={emp.id}>
-                  {emp.id} - {emp.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {/* Year filter */}
-          <FormControl fullWidth>
-            <InputLabel shrink>Year</InputLabel>
-            <Select
-              value={selectedYear}
-              label="Year"
-              onChange={(e) => setSelectedYear(e.target.value)}
-              displayEmpty
-              renderValue={(selected) => selected === "" ? "All Years" : selected}
-            >
-              <MenuItem value="">All Years</MenuItem>
-              {years.map((year) => (
-                <MenuItem key={year} value={year}>
-                  {year}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {selectedEmployeeId && (
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => router.push(`/ceo/custom-tags/${selectedEmployeeId}`)}
-              sx={{ alignSelf: "flex-start", mt: 1 }}
-
-            >
-              Manage Tags for Employee
-            </Button>
-          )}
-
-
-          {/* Notes display */}
-          <Box>
-            {notes.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">
-                No notes found for the selected filters.
-              </Typography>
-            ) : (
-              notes.map((note) => (
-                <Box
-                  key={note.id}
-                  sx={{
-                    mb: 2,
-                    p: 2,
-                    bgcolor: "grey.100",
-                    borderRadius: 1,
-                    border: "1px solid #ddd",
-                  }}
-                >
-                  <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 1 }}>
-                    <Button size="small" variant="outlined" onClick={() => handleEdit(note)}>
-                      Edit
-                    </Button>
-                    <Button size="small" color="error" variant="outlined" onClick={() => handleDelete(note.id)}>
-                      Delete
-                    </Button>
-                  </Box>
-
-                  <Stack direction="row" spacing={1} mb={1}>
-                    <Chip
-                      label={note.note_type}
-                      color={
-                        note.note_type === "positive"
-                          ? "success"
-                          : note.note_type === "negative"
-                            ? "error"
-                            : "warning"
-                      }
-                      variant="outlined"
-                    />
-                    <Chip label={`ID: ${note.employee_id}`} variant="outlined" />
-                    <Chip label={note.employee_name} />
-                  </Stack>
-                  <Typography variant="body2" sx={{ mb: 1 }}>
-                    {note.note}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {new Date(note.timestamp).toLocaleString()}
-                  </Typography>
-                </Box>
-              ))
-            )}
-          </Box>
-          <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="sm">
-            <DialogTitle>Edit Note</DialogTitle>
-            <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
-              <TextField
-                label="Note"
-                multiline
-                rows={4}
-                value={noteToEdit?.note || ""}
-                onChange={(e) =>
-                  setNoteToEdit((prev) =>
-                    prev ? { ...prev, note: e.target.value } : prev
-                  )
-                }
-              />
-              <FormControl fullWidth>
-                <InputLabel>Note Type</InputLabel>
-                <Select
-                  value={noteToEdit?.note_type || "neutral"}
-                  onChange={(e) =>
-                    setNoteToEdit((prev) =>
-                      prev ? { ...prev, note_type: e.target.value as Note["note_type"] } : prev
-                    )
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 1 }}>
+                <Chip
+                  label={note.note_type}
+                  color={
+                    note.note_type === "positive"
+                      ? "success"
+                      : note.note_type === "negative"
+                        ? "error"
+                        : "warning"
                   }
-                >
-                  <MenuItem value="positive">Positive</MenuItem>
-                  <MenuItem value="negative">Negative</MenuItem>
-                  <MenuItem value="neutral">Neutral</MenuItem>
-                </Select>
-              </FormControl>
-            </DialogContent>
-            <DialogActions>
-              <MuiButton onClick={() => setEditOpen(false)}>Cancel</MuiButton>
-              <MuiButton variant="contained" onClick={handleUpdate}>Update</MuiButton>
-            </DialogActions>
-          </Dialog>
+                />
+                <Chip
+                  label={note.is_private ? "🔒 Private" : "🌐 Public"}
+                  variant="outlined"
+                  sx={{ borderColor: "#00ffff", color: "#fff", backgroundColor: "rgba(0,255,255,0.1)", fontWeight: "bold" }}
+                />
+              </Box>
+              <Typography variant="subtitle1" fontWeight={600}>
+                {note.employee_name} (ID: {note.employee_id})
+              </Typography>
+              <Typography variant="body2">{note.note}</Typography>
+              <Typography variant="caption" color="rgba(255,255,255,0.6)">
+                {new Date(note.timestamp).toLocaleString()}
+              </Typography>
 
-        </Stack>
-      </CardContent>
+
+              <Box sx={{ mt: 2, display: "flex", gap: 2 }}>
+                {editingNoteId === note.id ? (
+                  <>
+                    <TextField
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      variant="outlined"
+                      size="small"
+                      fullWidth
+                      sx={{ input: { color: "#00ffff" } }}
+                    />
+                    <Button
+                      variant="outlined"
+                      onClick={() => handleSaveEdit(note.id)}
+                      sx={{ color: "#00ff00", borderColor: "#00ff00" }}
+                    >
+                      ✅ Save
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      onClick={() => {
+                        setEditingNoteId(null)
+                        setEditText("")
+                      }}
+                      sx={{ color: "#ff4444", borderColor: "#ff4444" }}
+                    >
+                      ❌ Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="outlined"
+                      onClick={() => handleEdit(note.id, note.note)}
+                      sx={{ color: "#00ffff", borderColor: "#00ffff" }}
+                    >
+                      ✏️ Edit
+                    </Button>
+
+                    <Button
+                      variant="outlined"
+                      onClick={() => handleDelete(note.id)}
+                      sx={{ color: "#ff4444", borderColor: "#ff4444" }}
+                    >
+                      🗑️ Delete
+                    </Button>
+                  </>
+                )}
+              </Box>
+
+
+
+            </Box>
+          ))
+        )}
+      </Box>
     </Card>
   )
 }

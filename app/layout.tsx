@@ -1,5 +1,19 @@
 import type React from "react"
+import "./globals.css"
 import { AuthProvider } from "./context/auth-context"
+import { Orbitron } from "next/font/google"
+
+const orbitron = Orbitron({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  display: "swap",
+})
+
+export const metadata = {
+  title: "Performance Dashboard",
+  description: "Futuristic Performance Toolkit App",
+  generator: "v0.dev",
+}
 
 export default function RootLayout({
   children,
@@ -8,16 +22,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body className={orbitron.className}>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   )
 }
-
-
-import './globals.css'
-
-export const metadata = {
-      generator: 'v0.dev'
-    };

@@ -12,6 +12,9 @@ import {
   Button,
   TextField,
   Stack,
+  Box,
+  FormControlLabel,
+  Checkbox,
 } from "@mui/material"
 
 interface Employee {
@@ -26,7 +29,6 @@ export default function CEOAddNoteView() {
   const [performanceNote, setPerformanceNote] = useState("")
   const [isPrivate, setIsPrivate] = useState(false)
 
-
   useEffect(() => {
     const fetchEmployees = async () => {
       const token = localStorage.getItem("token")
@@ -40,7 +42,6 @@ export default function CEOAddNoteView() {
         })
 
         if (!res.ok) throw new Error("Failed to fetch employees")
-
         const data = await res.json()
         setEmployees(data)
         if (data.length > 0) setSelectedEmployeeId(data[0].id)
@@ -52,7 +53,6 @@ export default function CEOAddNoteView() {
     fetchEmployees()
   }, [])
 
-  
   const handleAddNote = async () => {
     if (!selectedEmployeeId) {
       alert("Please select an employee.")
@@ -71,14 +71,13 @@ export default function CEOAddNoteView() {
         },
         body: JSON.stringify({
           employeeId: selectedEmployeeId,
-          noteType, // already lowercase, type-safe
+          noteType,
           performanceNote,
-          is_private : isPrivate
+          is_private: isPrivate,
         }),
       })
 
       if (!res.ok) throw new Error("Failed to add note")
-
       const data = await res.json()
       console.log("✅ Note added:", data)
       alert("Note added successfully!")
@@ -90,14 +89,34 @@ export default function CEOAddNoteView() {
   }
 
   return (
-    <Card sx={{ maxWidth: 500, mx: "auto" }}>
+    <Card
+      sx={{
+        background: "rgba(255, 255, 255, 0.05)",
+        backdropFilter: "blur(20px)",
+        borderRadius: 4,
+        border: "1px solid rgba(255, 255, 255, 0.1)",
+        boxShadow: "0 0 30px rgba(14,165,233,0.15)",
+        color: "#e0f2fe",
+        fontFamily: "'Orbitron', sans-serif",
+      }}
+    >
       <CardContent>
-        <Typography variant="h5" component="h2" gutterBottom color="text.secondary">
-          CEO Add Note View
+        <Typography
+          variant="h5"
+          gutterBottom
+          sx={{
+            mb: 4,
+            fontWeight: "bold",
+            color: "#7dd3fc",
+            textShadow: "0 0 10px rgba(125, 211, 252, 0.4)",
+          }}
+        >
+          ✍️ Add Performance Note
         </Typography>
 
         <Stack spacing={3}>
-          <FormControl fullWidth>
+          {/* Employee Dropdown */}
+          <FormControl fullWidth sx={dropdownStyles}>
             <InputLabel>Employee</InputLabel>
             <Select
               value={selectedEmployeeId}
@@ -106,12 +125,13 @@ export default function CEOAddNoteView() {
             >
               {employees.map((emp) => (
                 <MenuItem key={emp.id} value={emp.id}>
-                  {emp.name}
+                  👤 {emp.id} - {emp.name}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
 
+          {/* Note Text */}
           <TextField
             label="Performance Note"
             multiline
@@ -120,45 +140,91 @@ export default function CEOAddNoteView() {
             onChange={(e) => setPerformanceNote(e.target.value)}
             fullWidth
             variant="outlined"
+            sx={textFieldStyles}
           />
 
-          <FormControl fullWidth>
+          {/* Note Type Dropdown */}
+          <FormControl fullWidth sx={dropdownStyles}>
             <InputLabel>Type</InputLabel>
             <Select
               value={noteType}
               label="Type"
               onChange={(e) => setNoteType(e.target.value as "positive" | "negative" | "neutral")}
             >
-              <MenuItem value="positive">Positive</MenuItem>
-              <MenuItem value="negative">Negative</MenuItem>
-              <MenuItem value="neutral">Neutral</MenuItem>
+              <MenuItem value="positive">✅ Positive</MenuItem>
+              <MenuItem value="negative">⚠️ Negative</MenuItem>
+              <MenuItem value="neutral">➖ Neutral</MenuItem>
             </Select>
           </FormControl>
 
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="private"
-              checked={isPrivate}
-              onChange={() => setIsPrivate(!isPrivate)}
-            />
-            <label htmlFor="private" className="text-sm">Mark as Private (CEO only)</label>
-          </div>
+          {/* Private checkbox */}
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={isPrivate}
+                onChange={() => setIsPrivate(!isPrivate)}
+                sx={{
+                  color: "#7dd3fc",
+                  "&.Mui-checked": {
+                    color: "#38bdf8",
+                  },
+                }}
+              />
+            }
+            label="🔒 Mark as Private (CEO only)"
+            sx={{ color: "#bae6fd", fontWeight: 500 }}
+          />
 
-
+          {/* Submit Button */}
           <Button
             variant="contained"
             onClick={handleAddNote}
             sx={{
-              alignSelf: "flex-start",
               textTransform: "none",
               fontWeight: "bold",
+              background: "#38bdf8",
+              color: "#0f172a",
+              "&:hover": {
+                background: "#0ea5e9",
+              },
             }}
           >
-            Add Note
+            ➕ Add Note
           </Button>
         </Stack>
       </CardContent>
     </Card>
   )
+}
+
+// Style helpers
+const dropdownStyles = {
+  "& .MuiInputBase-root": {
+    background: "#1e293b",
+    borderRadius: "12px",
+    color: "#e0f2fe",
+  },
+  "& .MuiInputLabel-root": {
+    color: "#7dd3fc",
+  },
+  "& .MuiOutlinedInput-notchedOutline": {
+    border: "1px solid rgba(125, 211, 252, 0.3)",
+  },
+  "& .MuiSvgIcon-root": {
+    color: "#7dd3fc",
+  },
+}
+
+const textFieldStyles = {
+  "& .MuiInputBase-root": {
+    background: "#1e293b",
+    borderRadius: "12px",
+    color: "#e0f2fe",
+  },
+  "& .MuiInputLabel-root": {
+    color: "#7dd3fc",
+  },
+  "& .MuiOutlinedInput-notchedOutline": {
+    border: "1px solid rgba(125, 211, 252, 0.3)",
+  },
 }

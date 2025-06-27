@@ -65,16 +65,20 @@ export default function LoginPage() {
   }
 
   return (
-    <Container component="main" maxWidth="xs">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-        }}
-      >
-        <Card sx={{ width: "100%" }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        backgroundImage: "url('/bg-download.jpeg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <Container maxWidth="xs">
+        <Card sx={{ backgroundColor: "rgba(0, 0, 0, 0.7)", color: "#fff", borderRadius: 2 }}>
           <CardContent>
             <Typography component="h1" variant="h5" align="center" gutterBottom>
               Performance Management System
@@ -101,6 +105,10 @@ export default function LoginPage() {
                 autoFocus
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                InputLabelProps={{ style: { color: "#ccc" } }}
+                InputProps={{
+                  style: { color: "#fff", borderColor: "#fff" },
+                }}
               />
               <TextField
                 margin="normal"
@@ -113,17 +121,23 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                InputLabelProps={{ style: { color: "#ccc" } }}
+                InputProps={{
+                  style: { color: "#fff" },
+                }}
               />
 
-              {/* ✅ Dynamic Quick Login Dropdown */}
               <FormControl fullWidth margin="normal">
-                <InputLabel id="quick-login-label">Quick Login As</InputLabel>
+                <InputLabel id="quick-login-label" sx={{ color: "#ccc" }}>
+                  Quick Login As
+                </InputLabel>
                 <Select
                   labelId="quick-login-label"
                   id="quick-login-select"
                   value={email}
                   label="Quick Login As"
                   onChange={(e) => setEmail(e.target.value)}
+                  sx={{ color: "#fff" }}
                 >
                   {quickUsers.map((user) => (
                     <MenuItem key={user.email} value={user.email}>
@@ -133,19 +147,19 @@ export default function LoginPage() {
                 </Select>
               </FormControl>
 
-              <Button type="submit" fullWidth variant="contained" sx={{ mt: 3 }}>
+              <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, bgcolor: "#5c7cfa" }}>
                 Sign In
               </Button>
 
               <Typography variant="body2" align="right" sx={{ mt: 1 }}>
-                <Link href="/forgot-password" style={{ color: "#1976d2", textDecoration: "underline" }}>
+                <Link href="/forgot-password" style={{ color: "#90caf9", textDecoration: "underline" }}>
                   Forgot Password?
                 </Link>
               </Typography>
             </Box>
           </CardContent>
         </Card>
-      </Box>
-    </Container>
+      </Container>
+    </Box>
   )
 }

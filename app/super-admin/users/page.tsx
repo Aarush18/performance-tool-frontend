@@ -21,7 +21,7 @@ interface User {
   role: string
 }
 
-export default function AdminDashboard() {
+export default function SuperAdminUsersPage() {
   const [users, setUsers] = useState<User[]>([])
   const [selectedUserId, setSelectedUserId] = useState("")
   const [selectedRole, setSelectedRole] = useState("")
@@ -37,7 +37,6 @@ export default function AdminDashboard() {
   const [toastMsg, setToastMsg] = useState("")
   const [toastType, setToastType] = useState<"success" | "error" | "" >("")
 
-
   const API_BASE = process.env.NEXT_PUBLIC_API_URL
 
   useEffect(() => {
@@ -47,7 +46,7 @@ export default function AdminDashboard() {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem("token")
-      const res = await fetch(`${API_BASE}/api/admin/users`, {
+      const res = await fetch(`${API_BASE}/api/super-admin/users`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -76,7 +75,7 @@ export default function AdminDashboard() {
 
     try {
       const token = localStorage.getItem("token")
-      const res = await fetch(`${API_BASE}/api/admin/create-user`, {
+      const res = await fetch(`${API_BASE}/api/super-admin/create-user`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -108,13 +107,12 @@ export default function AdminDashboard() {
       setToastMsg("❌ Error creating user!")
       setTimeout(() => setToastMsg(""), 3000)
     }
-
   }
 
   const handleDeleteUser = async (userId: number) => {
     try {
       const token = localStorage.getItem("token")
-      const res = await fetch(`${API_BASE}/api/admin/delete-user/${userId}`, {
+      const res = await fetch(`${API_BASE}/api/super-admin/delete-user/${userId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -137,7 +135,6 @@ export default function AdminDashboard() {
       setTimeout(() => setToastMsg(""), 3000)
     }
   }
-  
 
   const startEdit = (user: User) => {
     setEditingUserId(user.id)
@@ -156,7 +153,7 @@ export default function AdminDashboard() {
 
     try {
       const token = localStorage.getItem("token")
-      const res = await fetch(`${API_BASE}/api/admin/users/${editingUserId}`, {
+      const res = await fetch(`${API_BASE}/api/super-admin/users/${editingUserId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -186,7 +183,7 @@ export default function AdminDashboard() {
 
     try {
       const token = localStorage.getItem("token")
-      const res = await fetch(`${API_BASE}/api/admin/users/${selectedUserId}/role`, {
+      const res = await fetch(`${API_BASE}/api/super-admin/users/${selectedUserId}/role`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -221,18 +218,32 @@ export default function AdminDashboard() {
 
       <div className="flex justify-between items-center">
         <h2 className="text-4xl font-extrabold tracking-wide drop-shadow-lg animate-pulse">
-          Admin Dashboard
+          🚀 Super Admin - User Management
         </h2>
-        <Link href="/admin/teams">
-          <Button className="bg-sky-600 hover:bg-sky-500 transition">
-            Manage Teams
-          </Button>
-        </Link>
+        <div className="space-x-4">
+          <Link href="/super-admin/teams">
+            <Button className="bg-sky-600 hover:bg-sky-500 transition">
+              Manage Teams
+            </Button>
+          </Link>
+          <Link href="/super-admin">
+            <Button className="bg-cyan-600 hover:bg-cyan-500 transition">
+              Back to Dashboard
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <Card className="bg-[#1e293b] shadow-xl border border-sky-500/30">
         <CardContent className="p-6 space-y-4">
-          <h3 className="text-2xl font-semibold text-sky-300">Create New User</h3>
+          <div className="flex justify-between items-center">
+            <h3 className="text-2xl font-semibold text-sky-300">Create New User</h3>
+            <Link href="/super-admin/create-user">
+              <Button className="bg-sky-600 hover:bg-sky-500 transition">
+                Create New User
+              </Button>
+            </Link>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Input className="bg-slate-800 text-white" placeholder="Email" value={newUserEmail} onChange={(e) => setNewUserEmail(e.target.value)} />
             <Input className="bg-slate-800 text-white" placeholder="Password" type="password" value={newUserPassword} onChange={(e) => setNewUserPassword(e.target.value)} />
@@ -241,7 +252,7 @@ export default function AdminDashboard() {
                 <SelectValue placeholder="Select Role" />
               </SelectTrigger>
               <SelectContent>
-                {["ceo", "manager", "hr", "employee", "admin"].map((r) => (
+                {["ceo", "manager", "hr", "employee", "admin", "super-admin"].map((r) => (
                   <SelectItem key={r} value={r}>{r.toUpperCase()}</SelectItem>
                 ))}
               </SelectContent>
@@ -271,7 +282,7 @@ export default function AdminDashboard() {
                 <SelectValue placeholder="Select Role" />
               </SelectTrigger>
               <SelectContent>
-                {["ceo", "manager", "hr", "employee", "admin"].map((r) => (
+                {["ceo", "manager", "hr", "employee", "admin", "super-admin"].map((r) => (
                   <SelectItem key={r} value={r}>{r.toUpperCase()}</SelectItem>
                 ))}
               </SelectContent>
@@ -298,7 +309,7 @@ export default function AdminDashboard() {
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
-                    {["ceo", "manager", "hr", "employee", "admin"].map((r) => (
+                    {["ceo", "manager", "hr", "employee", "admin", "super-admin"].map((r) => (
                       <SelectItem key={r} value={r}>{r.toUpperCase()}</SelectItem>
                     ))}
                   </SelectContent>
@@ -328,4 +339,4 @@ export default function AdminDashboard() {
       )}
     </div>
   )
-}
+} 

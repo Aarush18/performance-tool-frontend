@@ -10,19 +10,58 @@ export default function ManagerNotesPage() {
 
   return (
     <ProtectedRoute requiredRoles={["manager"]}>
-      <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 4 }}>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Team Performance Notes
-          </Typography>
-          <Box>
-            <Button variant="outlined" onClick={() => router.push("/dashboard")}>
-              Back to Dashboard
+      <Box
+        sx={{
+          minHeight: "100vh",
+          background: "linear-gradient(135deg, #050505 0%, #0f0f23 100%)",
+          backgroundAttachment: "fixed",
+          px: 2,
+          py: 6,
+          color: "#00ffff",
+          fontFamily: "'Orbitron', sans-serif",
+        }}
+      >
+        <Container maxWidth="lg">
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 4,
+            }}
+          >
+            <Typography
+              variant="h4"
+              component="h1"
+              gutterBottom
+              sx={{
+                color: "#00ffff",
+                textShadow: "0 0 10px rgba(0,255,255,0.8)",
+              }}
+            >
+              📊 Team Performance Notes
+            </Typography>
+            <Button
+              variant="outlined"
+              onClick={() => router.push("/dashboard")}
+              sx={{
+                borderColor: "#00ffff",
+                color: "#00ffff",
+                textTransform: "none",
+                fontWeight: "bold",
+                "&:hover": {
+                  backgroundColor: "rgba(0,255,255,0.1)",
+                  borderColor: "#00ffff",
+                },
+              }}
+            >
+              ⬅ Back to Dashboard
             </Button>
           </Box>
-        </Box>
-        <ManagerNotesView />
-      </Container>
+
+          <ManagerNotesView />
+        </Container>
+      </Box>
     </ProtectedRoute>
   )
 }

@@ -32,7 +32,7 @@ interface Log {
     target_id?: number
 }
 
-export default function ActivityLogsPage() {
+export default function SuperAdminActivityLogsPage() {
     const [logs, setLogs] = useState<Log[]>([])
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState("")
@@ -49,7 +49,7 @@ export default function ActivityLogsPage() {
         const fetchLogs = async () => {
             try {
                 const token = localStorage.getItem("token")
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/activityLogs`, {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/super-admin/activityLogs`, {
                     headers: { Authorization: `Bearer ${token}` },
                 })
                 if (!res.ok) throw new Error("Failed to fetch logs")
@@ -129,23 +129,23 @@ export default function ActivityLogsPage() {
                     sx={{
                         fontFamily: "'Orbitron', sans-serif",
                         fontWeight: "bold",
-                        color: "#7dd3fc",
-                        textShadow: "0 0 10px rgba(125, 211, 252, 0.4)",
+                        color: "#00ffff",
+                        textShadow: "0 0 10px rgba(0, 255, 255, 0.4)",
                     }}
                 >
-                    📜 Activity Logs
+                    🚀 Super Admin - Activity Logs
                 </Typography>
 
                 <Button
                     variant="outlined"
-                    onClick={() => router.push("/dashboard")}
+                    onClick={() => router.push("/super-admin")}
                     sx={{
-                        color: "#7dd3fc",
-                        borderColor: "#7dd3fc",
+                        color: "#00ffff",
+                        borderColor: "#00ffff",
                         "&:hover": {
-                            backgroundColor: "#0ea5e9",
+                            backgroundColor: "#00ffff",
                             color: "#0f172a",
-                            borderColor: "#0ea5e9",
+                            borderColor: "#00ffff",
                         },
                     }}
                 >
@@ -163,30 +163,30 @@ export default function ActivityLogsPage() {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         InputProps={{
-                            startAdornment: <SearchIcon sx={{ mr: 1, color: "#7dd3fc" }} />,
+                            startAdornment: <SearchIcon sx={{ mr: 1, color: "#00ffff" }} />,
                             sx: { color: "#fff" }
                         }}
                         sx={{
                             "& .MuiOutlinedInput-root": {
-                                "& fieldset": { borderColor: "#7dd3fc" },
-                                "&:hover fieldset": { borderColor: "#7dd3fc" },
-                                "&.Mui-focused fieldset": { borderColor: "#7dd3fc" },
+                                "& fieldset": { borderColor: "#00ffff" },
+                                "&:hover fieldset": { borderColor: "#00ffff" },
+                                "&.Mui-focused fieldset": { borderColor: "#00ffff" },
                             },
-                            "& .MuiInputLabel-root": { color: "#7dd3fc" }
+                            "& .MuiInputLabel-root": { color: "#00ffff" }
                         }}
                     />
                 </Grid>
                 <Grid item xs={12} md={3}>
                     <FormControl fullWidth>
-                        <InputLabel sx={{ color: "#7dd3fc" }}>Filter by Action</InputLabel>
+                        <InputLabel sx={{ color: "#00ffff" }}>Filter by Action</InputLabel>
                         <Select
                             value={actionFilter}
                             onChange={(e) => setActionFilter(e.target.value)}
                             sx={{
                                 color: "#fff",
-                                "& .MuiOutlinedInput-notchedOutline": { borderColor: "#7dd3fc" },
-                                "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#7dd3fc" },
-                                "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#7dd3fc" },
+                                "& .MuiOutlinedInput-notchedOutline": { borderColor: "#00ffff" },
+                                "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#00ffff" },
+                                "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#00ffff" },
                             }}
                         >
                             <MenuItem value="">All Actions</MenuItem>
@@ -198,15 +198,15 @@ export default function ActivityLogsPage() {
                 </Grid>
                 <Grid item xs={12} md={3}>
                     <FormControl fullWidth>
-                        <InputLabel sx={{ color: "#7dd3fc" }}>Filter by User</InputLabel>
+                        <InputLabel sx={{ color: "#00ffff" }}>Filter by User</InputLabel>
                         <Select
                             value={userFilter}
                             onChange={(e) => setUserFilter(e.target.value)}
                             sx={{
                                 color: "#fff",
-                                "& .MuiOutlinedInput-notchedOutline": { borderColor: "#7dd3fc" },
-                                "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#7dd3fc" },
-                                "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#7dd3fc" },
+                                "& .MuiOutlinedInput-notchedOutline": { borderColor: "#00ffff" },
+                                "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#00ffff" },
+                                "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#00ffff" },
                             }}
                         >
                             <MenuItem value="">All Users</MenuItem>
@@ -224,12 +224,12 @@ export default function ActivityLogsPage() {
                         startIcon={<DownloadIcon />}
                         sx={{
                             height: "100%",
-                            color: "#7dd3fc",
-                            borderColor: "#7dd3fc",
+                            color: "#00ffff",
+                            borderColor: "#00ffff",
                             "&:hover": {
-                                backgroundColor: "#0ea5e9",
+                                backgroundColor: "#00ffff",
                                 color: "#0f172a",
-                                borderColor: "#0ea5e9",
+                                borderColor: "#00ffff",
                             },
                         }}
                     >
@@ -239,7 +239,7 @@ export default function ActivityLogsPage() {
             </Grid>
 
             {loading ? (
-                <CircularProgress sx={{ color: "#7dd3fc" }} />
+                <CircularProgress sx={{ color: "#00ffff" }} />
             ) : logs.length === 0 ? (
                 <Typography sx={{ color: "#e0f2fe" }}>No logs available.</Typography>
             ) : (
@@ -247,8 +247,8 @@ export default function ActivityLogsPage() {
                 <Card
                     sx={{
                         background: "linear-gradient(135deg, rgba(15,23,42,0.9), rgba(2,6,23,0.9))",
-                        border: "1px solid rgba(125,211,252,0.2)",
-                        boxShadow: "0 0 25px rgba(125,211,252,0.2)",
+                        border: "1px solid rgba(0,255,255,0.2)",
+                        boxShadow: "0 0 25px rgba(0,255,255,0.2)",
                         borderRadius: 4,
                         color: "#e0f2fe",
                         backdropFilter: "blur(12px)",
@@ -266,15 +266,15 @@ export default function ActivityLogsPage() {
                                         borderRadius: 3,
                                         background: "linear-gradient(145deg, rgba(30,58,138,0.3), rgba(2,6,23,0.6))",
                                         border: "1px solid rgba(255,255,255,0.1)",
-                                        boxShadow: "0 5px 20px rgba(125,211,252,0.1)",
+                                        boxShadow: "0 5px 20px rgba(0,255,255,0.1)",
                                         transition: "transform 0.2s",
                                         "&:hover": {
                                             transform: "scale(1.01)",
-                                            boxShadow: "0 5px 30px rgba(125,211,252,0.3)",
+                                            boxShadow: "0 5px 30px rgba(0,255,255,0.3)",
                                         },
                                     }}
                                 >
-                                    <Typography variant="subtitle1" sx={{ color: "#7dd3fc", fontWeight: "bold" }}>
+                                    <Typography variant="subtitle1" sx={{ color: "#00ffff", fontWeight: "bold" }}>
                                         👤 {log.user_email}
                                     </Typography>
                                     <Typography variant="body2" sx={{ mt: 1 }}>
@@ -303,17 +303,17 @@ export default function ActivityLogsPage() {
                             onChange={(_, value) => setPage(value)}
                             sx={{
                                 "& .MuiPaginationItem-root": {
-                                    color: "#7dd3fc",
-                                    borderColor: "#7dd3fc",
+                                    color: "#00ffff",
+                                    borderColor: "#00ffff",
                                     "&.Mui-selected": {
-                                        backgroundColor: "#7dd3fc",
+                                        backgroundColor: "#00ffff",
                                         color: "#0f172a",
                                         "&:hover": {
-                                            backgroundColor: "#7dd3fc",
+                                            backgroundColor: "#00ffff",
                                         },
                                     },
                                     "&:hover": {
-                                        backgroundColor: "rgba(125,211,252,0.1)",
+                                        backgroundColor: "rgba(0,255,255,0.1)",
                                     },
                                 },
                             }}
@@ -323,4 +323,4 @@ export default function ActivityLogsPage() {
             )}
         </Container>
     )
-}
+} 
