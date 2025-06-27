@@ -29,6 +29,7 @@ import {
   History as HistoryIcon,
   NoteAdd as NoteAddIcon,
 } from "@mui/icons-material"
+import { useAuth } from "../context/auth-context"
 
 interface User {
   id: number
@@ -67,6 +68,7 @@ export default function SuperAdminDashboard() {
     totalEmployees: 0,
   })
   const router = useRouter()
+  const { logout } = useAuth();
 
   useEffect(() => {
     fetchDashboardData()
@@ -210,15 +212,25 @@ export default function SuperAdminDashboard() {
               <Typography variant="h3" fontWeight="bold" sx={{ color: "#00ffff", textShadow: "0 0 20px rgba(0,255,255,0.5)" }}>
                 🚀 Super Admin Dashboard
               </Typography>
-              <Chip 
-                label="SUPER ADMIN" 
-                sx={{ 
-                  background: "linear-gradient(45deg, #00ffff, #005eff)",
-                  color: "#000",
-                  fontWeight: "bold",
-                  fontSize: "1rem",
-                }} 
-              />
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Chip 
+                  label="SUPER ADMIN" 
+                  sx={{ 
+                    background: "linear-gradient(45deg, #00ffff, #005eff)",
+                    color: "#000",
+                    fontWeight: "bold",
+                    fontSize: "1rem",
+                  }} 
+                />
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={logout}
+                  sx={{ ml: 2, borderColor: "#00ffff", color: "#00ffff", fontWeight: "bold" }}
+                >
+                  Logout
+                </Button>
+              </Box>
             </Box>
 
             {/* Stats Cards */}

@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
+import BulkManagerMappingImport from "../../components/BulkManagerMappingImport"
 
 interface User {
   id: number
@@ -33,20 +34,11 @@ export default function ManageTeams() {
   const [loading, setLoading] = useState(true)
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL
+
   useEffect(() => {
     const storedToken = localStorage.getItem("token")
-    console.log("Token from localStorage:", storedToken)
     if (storedToken) setToken(storedToken)
   }, [])
-  
-  useEffect(() => {
-    if (token) {
-      console.log("Triggering fetch with token:", token)
-      fetchManagers()
-      fetchAllEmployees()
-    }
-  }, [token])
-  
 
   useEffect(() => {
     if (token) {
@@ -63,7 +55,7 @@ export default function ManageTeams() {
     const managerIdNum = Number(selectedManagerId)
     if (managerIdNum) {
       setTeamMembers(allEmployees.filter(emp => emp.manager_id === managerIdNum))
-      setUnassignedEmployees(allEmployees.filter(emp => emp.manager_id === null)) // ✅ fixed
+      setUnassignedEmployees(allEmployees.filter(emp => emp.manager_id === null))
     } else {
       setTeamMembers([])
       setUnassignedEmployees(allEmployees.filter(emp => emp.manager_id === null))
@@ -72,12 +64,10 @@ export default function ManageTeams() {
 
   const fetchManagers = async () => {
     try {
-      console.log("Fetching managers...")
       const res = await fetch(`${API_BASE}/api/admin/managers`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       const data = await res.json()
-      console.log("Managers data:", data)
       if (Array.isArray(data)) setManagers(data)
     } catch (err) {
       console.error("Failed to fetch managers:", err)
@@ -95,34 +85,6 @@ export default function ManageTeams() {
       if (Array.isArray(data)) setAllEmployees(data)
     } catch (err) {
       console.error("Failed to fetch employees:", err)
-    }
-  }
-
-  const fetchUnassignedEmployees = async () => {
-    try {
-      console.log("Fetching unassigned employees...")
-      const res = await fetch(`${API_BASE}/api/admin/employees/unassigned`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      const data = await res.json()
-      console.log("Unassigned employees data:", data)
-      if (Array.isArray(data)) setUnassignedEmployees(data)
-    } catch (err) {
-      console.error("Failed to fetch unassigned employees:", err)
-    }
-  }
-
-  const fetchTeamMembers = async (managerId: string) => {
-    try {
-      console.log(`Fetching team for manager ID: ${managerId}`)
-      const res = await fetch(`${API_BASE}/api/admin/managers/${managerId}/team`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      const data = await res.json()
-      console.log("Team members data:", data)
-      if (Array.isArray(data)) setTeamMembers(data)
-    } catch (err) {
-      console.error("Failed to fetch team members:", err)
     }
   }
 
@@ -195,6 +157,13 @@ export default function ManageTeams() {
 
       <h2 className="text-4xl font-extrabold tracking-wide drop-shadow-lg">Manage Teams</h2>
 
+      {/* 🚀 Bulk Mapping CSV Import */}
+      <BulkManagerMappingImport
+        apiUrl={`${API_BASE}/api/admin/mappings/bulk-import`}
+        onSuccess={fetchAllEmployees}
+      />
+
+      {/* Manager Dropdown */}
       <Card className="bg-[#1e293b] shadow-xl border border-sky-500/30">
         <CardHeader>
           <CardTitle className="text-sky-300">Select a Manager</CardTitle>
@@ -217,8 +186,9 @@ export default function ManageTeams() {
 
       <Separator className="bg-sky-800" />
 
+      {/* Manager's Team + Unassigned */}
       <div className="grid md:grid-cols-2 gap-8">
-        {/* Manager's Team */}
+        {/* Team Members */}
         <Card className="bg-[#1e293b] shadow-xl border border-sky-500/30">
           <CardHeader>
             <CardTitle className="text-sky-300">Manager's Team</CardTitle>

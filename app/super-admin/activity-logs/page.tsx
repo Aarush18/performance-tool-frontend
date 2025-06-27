@@ -20,7 +20,11 @@ import {
     Grid,
 } from "@mui/material"
 import { useRouter } from "next/navigation"
-import { Search as SearchIcon, FilterList as FilterIcon, Download as DownloadIcon } from "@mui/icons-material"
+import { Search as SearchIcon, FilterList as FilterIcon, Download as DownloadIcon, Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material"
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
 
 interface Log {
     id: number
@@ -42,6 +46,10 @@ export default function SuperAdminActivityLogsPage() {
     const [totalPages, setTotalPages] = useState(1)
     const [uniqueActions, setUniqueActions] = useState<string[]>([])
     const [uniqueUsers, setUniqueUsers] = useState<string[]>([])
+    const [editOpen, setEditOpen] = useState(false)
+    const [editLog, setEditLog] = useState<Log | null>(null)
+    const [editAction, setEditAction] = useState("")
+    const [editDetails, setEditDetails] = useState("")
     const router = useRouter()
     const logsPerPage = 10
 
@@ -56,8 +64,8 @@ export default function SuperAdminActivityLogsPage() {
                 const data = await res.json()
                 
                 // Extract unique actions and users for filters
-                const actions = [...new Set(data.map((log: Log) => log.action))]
-                const users = [...new Set(data.map((log: Log) => log.user_email))]
+                const actions = [...new Set(data.map((log: Log) => log.action))] as string[]
+                const users = [...new Set(data.map((log: Log) => log.user_email))] as string[]
                 setUniqueActions(actions)
                 setUniqueUsers(users)
 
@@ -109,6 +117,43 @@ export default function SuperAdminActivityLogsPage() {
         a.click()
         document.body.removeChild(a)
         window.URL.revokeObjectURL(url)
+    }
+
+    const handleDelete = async (id: number) => {
+        if (!window.confirm("Delete this log?")) return;
+        const token = localStorage.getItem("token")
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/super-admin/activityLogs/${id}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+        })
+        if (res.ok) {
+            setLogs(logs.filter(log => log.id !== id))
+        }
+    }
+
+    const handleEditOpen = (log: Log) => {
+        setEditLog(log)
+        setEditAction(log.action)
+        setEditDetails(log.details)
+        setEditOpen(true)
+    }
+
+    const handleEditSave = async () => {
+        if (!editLog) return
+        const token = localStorage.getItem("token")
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/super-admin/activityLogs/${editLog.id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ action: editAction, details: editDetails }),
+        })
+        if (res.ok) {
+            const data = await res.json()
+            setLogs(logs.map(l => l.id === editLog.id ? { ...l, action: editAction, details: editDetails } : l))
+            setEditOpen(false)
+        }
     }
 
     return (
@@ -272,6 +317,7 @@ export default function SuperAdminActivityLogsPage() {
                                             transform: "scale(1.01)",
                                             boxShadow: "0 5px 30px rgba(0,255,255,0.3)",
                                         },
+                                        position: "relative"
                                     }}
                                 >
                                     <Typography variant="subtitle1" sx={{ color: "#00ffff", fontWeight: "bold" }}>
@@ -289,6 +335,14 @@ export default function SuperAdminActivityLogsPage() {
                                     >
                                         ⏰ {new Date(log.timestamp).toLocaleString()}
                                     </Typography>
+                                    <Box sx={{ position: "absolute", top: 8, right: 8, display: "flex", gap: 1 }}>
+                                        <IconButton onClick={() => handleEditOpen(log)} size="small">
+                                            <EditIcon sx={{ color: "#00ffff" }} />
+                                        </IconButton>
+                                        <IconButton onClick={() => handleDelete(log.id)} size="small">
+                                            <DeleteIcon sx={{ color: "#ef4444" }} />
+                                        </IconButton>
+                                    </Box>
                                 </Box>
                             ))}
                         </Stack>
@@ -321,6 +375,32 @@ export default function SuperAdminActivityLogsPage() {
                     </Box>
                 </>
             )}
+            {/* Edit Modal */}
+            <Dialog open={editOpen} onClose={() => setEditOpen(false)}>
+                <DialogTitle>Edit Activity Log</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        label="Action"
+                        value={editAction}
+                        onChange={e => setEditAction(e.target.value)}
+                        fullWidth
+                        margin="normal"
+                    />
+                    <TextField
+                        label="Details"
+                        value={editDetails}
+                        onChange={e => setEditDetails(e.target.value)}
+                        fullWidth
+                        margin="normal"
+                        multiline
+                        minRows={2}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setEditOpen(false)} color="secondary">Cancel</Button>
+                    <Button onClick={handleEditSave} color="primary" variant="contained">Save</Button>
+                </DialogActions>
+            </Dialog>
         </Container>
     )
 } 

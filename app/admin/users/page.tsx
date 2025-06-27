@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import Link from "next/link"
+import BulkEmployeeImport from "../../components/BulkEmployeeImport"
 
 interface User {
   id: number
@@ -37,6 +38,10 @@ export default function AdminDashboard() {
   const [toastMsg, setToastMsg] = useState("")
   const [toastType, setToastType] = useState<"success" | "error" | "" >("")
 
+  const [newEmployeeName, setNewEmployeeName] = useState("")
+  const [newEmployeeEmail, setNewEmployeeEmail] = useState("")
+  const [employeeToastMsg, setEmployeeToastMsg] = useState("")
+  const [employeeToastType, setEmployeeToastType] = useState<"success" | "error" | "">("")
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL
 
@@ -208,6 +213,40 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleAddEmployee = async () => {
+    if (!newEmployeeName || !newEmployeeEmail) {
+      setEmployeeToastType("error")
+      setEmployeeToastMsg("Name and email are required.")
+      setTimeout(() => setEmployeeToastMsg(""), 3000)
+      return
+    }
+    try {
+      const token = localStorage.getItem("token")
+      const res = await fetch(`${API_BASE}/api/admin/create-employee`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: newEmployeeName, email: newEmployeeEmail }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.message || "Employee creation failed")
+      }
+      setEmployeeToastType("success")
+      setEmployeeToastMsg("✅ Employee added successfully!")
+      setTimeout(() => setEmployeeToastMsg(""), 3000)
+      setNewEmployeeName("")
+      setNewEmployeeEmail("")
+      // Optionally refresh users or employees list here
+    } catch (err: any) {
+      setEmployeeToastType("error")
+      setEmployeeToastMsg("❌ Error adding employee!")
+      setTimeout(() => setEmployeeToastMsg(""), 3000)
+    }
+  }
+
   return (
     <div className="p-8 space-y-6 min-h-screen bg-gradient-to-br from-[#0f172a] to-[#020617] text-sky-100 font-mono transition-all duration-500 ease-in-out">
       {toastMsg && (
@@ -216,6 +255,13 @@ export default function AdminDashboard() {
             }`}
         >
           {toastMsg}
+        </div>
+      )}
+      {employeeToastMsg && (
+        <div
+          className={`fixed top-20 right-4 z-50 px-4 py-2 rounded shadow-lg text-white font-semibold transition-all duration-500 ${employeeToastType === "success" ? "bg-emerald-600" : "bg-red-600"}`}
+        >
+          {employeeToastMsg}
         </div>
       )}
 
@@ -248,6 +294,24 @@ export default function AdminDashboard() {
             </Select>
           </div>
           <Button onClick={handleCreateUser} className="bg-sky-600 hover:bg-sky-500 transition">Create User</Button>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-[#1e293b] shadow-xl border border-sky-500/30">
+        <CardContent className="p-6 space-y-4">
+          <h3 className="text-2xl font-semibold text-sky-300">Add Employee</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input className="bg-slate-800 text-white" placeholder="Name" value={newEmployeeName} onChange={(e) => setNewEmployeeName(e.target.value)} />
+            <Input className="bg-slate-800 text-white" placeholder="Email" value={newEmployeeEmail} onChange={(e) => setNewEmployeeEmail(e.target.value)} />
+          </div>
+          <Button onClick={handleAddEmployee} className="bg-sky-600 hover:bg-sky-500 transition">Add Employee</Button>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-[#1e293b] shadow-xl border border-sky-500/30">
+        <CardContent className="p-6 space-y-4">
+          <h3 className="text-2xl font-semibold text-sky-300">Bulk Employee Import</h3>
+          <BulkEmployeeImport apiUrl={`${API_BASE}/api/admin/import-employees`} onSuccess={() => {/* Optionally refresh users or employees list here */}} />
         </CardContent>
       </Card>
 

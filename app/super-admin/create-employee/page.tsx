@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
+import BulkEmployeeImport from "../../components/BulkEmployeeImport"
 
 export default function SuperAdminCreateEmployeePage() {
   const [formData, setFormData] = useState({
@@ -144,6 +145,7 @@ export default function SuperAdminCreateEmployeePage() {
           </div>
         </CardContent>
       </Card>
+      <BulkEmployeeImport apiUrl={`${process.env.NEXT_PUBLIC_API_URL}/api/super-admin/employees/import`} />
     </div>
   )
 } 
